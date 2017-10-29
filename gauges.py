@@ -2,6 +2,7 @@ import boto3
 import json
 import logging
 import os
+import re
 import requests
 import sys
 
@@ -64,7 +65,13 @@ def lambda_handler(event, context):
     channel = params['channel_name'][0]
     command_text = params['text'][0]
 
-    return lambda_response(None, "%s invoked %s in %s with the following text: %s" % (user, command, channel, command_text))
+    match = re.match(r'check (.+)', command_text)
+    if match is None:
+        return lambda_response(None, "%s invoked %s in %s with the following text: %s" % (user, command, channel, command_text))
+
+    response = check_gauge(match.group(1))
+    last_4_lines = response.text.strip().split("\n")[-4:]
+    return lambda_response(None, "\n".join(last_4_lines))
 
 
 # For running in a shell during local development/testing
