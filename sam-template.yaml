@@ -22,7 +22,7 @@ Resources:
   SlackGaugesCommand:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: guages.lambda_handler
+      Handler: gauges.lambda_handler
       Runtime: python2.7
       CodeUri: ./tmp/lambda_deployment_package.zip
       Description: Handler for /gauges Slack command
@@ -44,7 +44,7 @@ Resources:
                 - 'dynamodb:*Item'
                 - 'dynamodb:Query'
                 - 'dynamodb:Scan'
-              Resource: 'arn:aws:dynamodb:::table/river-guages-app-*'
+              Resource: 'arn:aws:dynamodb:::table/river-gauges-app-*'
       Events:
         RiverGaugesApi:
           Type: Api
@@ -53,4 +53,5 @@ Resources:
             Method: ANY
       Environment:
         Variables:
+          favoriteGaugesTable: !Ref FavoriteGauges
           kmsEncryptedToken: AQICAHhdVLBYeYKe3sWfFhcr4BYYa3XgjiHyRIY476ypxjn0pQGjfuvTDJD1rhPaZLACtqvdAAAAdjB0BgkqhkiG9w0BBwagZzBlAgEAMGAGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMh46Pe9g7mrAn3m2gAgEQgDPLB8zS2guRHQHi/eGtUuBqOwjRONEB7fBjXmdHa6j7YSBVuKm8slAkZaZ3fbukoxHazPE=

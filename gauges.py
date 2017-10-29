@@ -10,6 +10,7 @@ from pprint import pprint
 from urlparse import parse_qs
 
 ENCRYPTED_EXPECTED_TOKEN = os.environ['kmsEncryptedToken']
+FAVORITE_GAUGES_TABLE = os.environ['favoriteGaugesTable']
 
 kms = boto3.client('kms')
 expected_token = kms.decrypt(CiphertextBlob=b64decode(ENCRYPTED_EXPECTED_TOKEN))['Plaintext']
@@ -18,10 +19,9 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource('dynamodb')
-favorite_gauges_table = 'river-guages-app-FavoriteGauges-1AY0P6LELBSWG'
 
 def add_favorite_gauge(gauge_no, gauge_name):
-    table = dynamodb.Table(favorite_gauges_table)
+    table = dynamodb.Table(FAVORITE_GAUGES_TABLE)
     table.put_item(Item={
         'USGSSiteNumber': gauge_no,
         'GuageName': gauge_name
@@ -29,7 +29,7 @@ def add_favorite_gauge(gauge_no, gauge_name):
 
 
 def list_favorite_gauges(consistent_read=False):
-    table = dynamodb.Table(favorite_gauges_table)
+    table = dynamodb.Table(FAVORITE_GAUGES_TABLE)
     response = table.scan(ConsistentRead=consistent_read)
     return response['Items']
 
