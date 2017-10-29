@@ -18,3 +18,39 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+
+  SlackGaugesCommand:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: guages.lambda_handler
+      Runtime: python2.7
+      CodeUri: ./tmp/lambda_deployment_package.zip
+      Description: Handler for /gauges Slack command
+      MemorySize: 128
+      Timeout: 3 # Enforced by Slack
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Sid: DecryptSlackToken
+              Effect: Allow
+              Action:
+                - 'kms:Decrypt'
+              Resource: '*'
+            - Sid: DynamoDBUsage
+              Effect: Allow
+              Action:
+                - 'dynamodb:Get*'
+                - 'dynamodb:Describe*'
+                - 'dynamodb:*Item'
+                - 'dynamodb:Query'
+                - 'dynamodb:Scan'
+              Resource: 'arn:aws:dynamodb:::table/river-guages-app-*'
+      Events:
+        RiverGaugesApi:
+          Type: Api
+          Properties:
+            Path: /gauges
+            Method: ANY
+      Environment:
+        Variables:
+          kmsEncryptedToken: AQICAHhdVLBYeYKe3sWfFhcr4BYYa3XgjiHyRIY476ypxjn0pQGjfuvTDJD1rhPaZLACtqvdAAAAdjB0BgkqhkiG9w0BBwagZzBlAgEAMGAGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMh46Pe9g7mrAn3m2gAgEQgDPLB8zS2guRHQHi/eGtUuBqOwjRONEB7fBjXmdHa6j7YSBVuKm8slAkZaZ3fbukoxHazPE=
