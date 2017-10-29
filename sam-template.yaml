@@ -1,0 +1,20 @@
+# CloudFormation Boilerplate
+AWSTemplateFormatVersion: '2010-09-09'
+
+# Tell CloudFormation to use the AWS Serverless Aplication Model extensions.
+# AWS SAM Docs: http://docs.aws.amazon.com/lambda/latest/dg/deploying-lambda-apps.html#serverless_app
+# SAM Specification: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md
+Transform: 'AWS::Serverless-2016-10-31'
+
+Resources:
+  # Create a DynamoDB Table in which we can save our favorite gauges.
+  # Reference: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+  FavoriteGauges:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: USGSSiteNumber
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
