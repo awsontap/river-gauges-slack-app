@@ -21,27 +21,67 @@ logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource('dynamodb')
 
-def add_favorite_gauge(gauge_no, gauge_name):
+def add_favorite_gauge(params, match):
+    gauge_no = match.group(1)
+    gauge_name = match.group(2)
     table = dynamodb.Table(FAVORITE_GAUGES_TABLE)
     table.put_item(Item={
         'USGSSiteNumber': gauge_no,
         'GuageName': gauge_name
     })
+    return lambda_response(None, "added gauge %s %s" % (gauge_no, gauge_name))
 
 
-def list_favorite_gauges(consistent_read=False):
+def list_favorite_gauges(params, match):
     table = dynamodb.Table(FAVORITE_GAUGES_TABLE)
-    response = table.scan(ConsistentRead=consistent_read)
-    return response['Items']
+    response = table.scan()
+    # return response['Items']
+    gauge_list = ["\t%s\t%s" % (item['USGSSiteNumber'], item['GuageName']) for item in response['Items']]
+    return lambda_response(None, {
+        "text": """
+Your Favorite River Guages
+--------------------------
+%s
+""".strip() % "\n".join(gauge_list)
+        })
 
 
-def check_gauge(gauge_no):
+def check_gauge(params, match):
+    gauge_no = match.group(1)
     base_url = 'https://waterdata.usgs.gov/tx/nwis/uv'
     query_string = 'cb_00060=on&format=rdb&site_no=%s&period=1' % gauge_no
     full_url = '%s?%s' % (base_url, query_string)
-    print "GET %s" % full_url
-    return requests.get(full_url)
+    response = requests.get(full_url)
+    last_4_lines = response.text.strip().split("\n")[-4:]
+    return lambda_response(None, { "text": "\n".join(last_4_lines) })
 
+def display_help_message():
+    return lambda_response(None, {
+        "text":  """
+/gauges list - list favorite gauges
+/gauges add USGS_SITE_NUMBER - add gauge to list of favorite gauges
+/gauges check USGS_SITE_NUMBER - display current flow readings for gauge
+        """.strip()
+    })
+
+def gauges_app(params):
+    user = params['user_name'][0]
+    command = params['command'][0]
+    channel = params['channel_name'][0]
+    command_text = params['text'][0]
+
+    commands = {
+        r'check (.+)':  check_gauge,
+        r'add (.+) (.+)': add_favorite_gauge,
+        r'list': list_favorite_gauges,
+    }
+
+    for pattern, command in commands.iteritems():
+        match = re.match(pattern, command_text)
+        if match is not None:
+            return command(params, match)
+
+    return display_help_message()
 
 def lambda_response(err, res=None):
     return {
@@ -60,32 +100,17 @@ def lambda_handler(event, context):
         logger.error("Request token (%s) does not match expected", token)
         return lambda_response(Exception('Invalid request token'))
 
-    user = params['user_name'][0]
-    command = params['command'][0]
-    channel = params['channel_name'][0]
-    command_text = params['text'][0]
-
-    match = re.match(r'check (.+)', command_text)
-    if match is None:
-        return lambda_response(None, "%s invoked %s in %s with the following text: %s" % (user, command, channel, command_text))
-
-    response = check_gauge(match.group(1))
-    last_4_lines = response.text.strip().split("\n")[-4:]
-    return lambda_response(None, "\n".join(last_4_lines))
+    return gauges_app(params)
 
 
 # For running in a shell during local development/testing
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print "usage: python gauges.py <add|check>"
-        sys.exit(1)
+    params = {
+        'user_name': ['jordan'],
+        'command': ['/gauges'],
+        'channel_name': ['local'],
+        'text': [' '.join(sys.argv[1:])]
+    }
 
-    if sys.argv[1] == 'check':
-        response = check_gauge('08061540')
-        print "HTTP Status: %s" % response.status_code
-        last_4_lines = response.text.strip().split("\n")[-4:]
-        print "\n".join(last_4_lines)
-    elif sys.argv[1] == 'add':
-        add_favorite_gauge('08061540', 'Rowlett Creek')
-        items = list_favorite_gauges(consistent_read=True)
-        pprint(items)
+    resp = gauges_app(params)
+    pprint(resp)
