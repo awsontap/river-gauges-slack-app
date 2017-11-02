@@ -48,12 +48,18 @@ Your Favorite River Guages
 
 def check_gauge(params, match):
     gauge_no = match.group(1)
-    base_url = 'https://waterdata.usgs.gov/tx/nwis/uv'
-    query_string = 'cb_00060=on&format=rdb&site_no=%s&period=1' % gauge_no
-    full_url = '%s?%s' % (base_url, query_string)
-    response = requests.get(full_url)
-    last_4_lines = response.text.strip().split("\n")[-4:]
-    return lambda_response(None, { "text": "\n".join(last_4_lines) })
+
+    stats_url = 'https://waterdata.usgs.gov/tx/nwis/uv?cb_00060=on&format=rdb&site_no=%s&period=1' % gauge_no
+    graph_url = 'https://waterdata.usgs.gov/nwisweb/graph?agency_cd=USGS&site_no=%s&parm_cd=00060&period=1&format=gif_stats' % gauge_no
+
+    response = requests.get(stats_url)
+    last_measurement = response.text.strip().split("\n")[-1]
+    _, _, _, mtime, _, cfs, _ = re.split('\s+', last_measurement)
+
+    return lambda_response(None, {
+        "text": "Last measurement: %s cfs @ %s" %  (cfs, mtime),
+        "attachments": [{ "image_url":  graph_url }]
+    })
 
 def display_help_message():
     return lambda_response(None, {
@@ -61,7 +67,7 @@ def display_help_message():
 /gauges list - list favorite gauges
 /gauges add USGS_SITE_NUMBER - add gauge to list of favorite gauges
 /gauges check USGS_SITE_NUMBER - display current flow readings for gauge
-        """.strip()
+        """.strip(),
     })
 
 def gauges_app(params):
