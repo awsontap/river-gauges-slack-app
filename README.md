@@ -4,13 +4,15 @@ AWS Serverless Application Model (SAM) example for AWS on Tap.
 
 https://www.meetup.com/AWS-On-TAP/events/244064304/
 
+![gauges slack command screenshot](./screenshot.png)
+
 ## Development setup
 
 Install dependencies.
 
 * [AWS CLI](https://aws.amazon.com/cli/)
-* [Python 2.7]
-* Virtualenv
+* [Python 2.7](https://www.python.org/download/releases/2.7/)
+* [Virtualenv](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
 * [Make](https://www.gnu.org/software/make/)
 
 
@@ -44,3 +46,9 @@ Run the /gauges command locally.
 
     export APP_ENV=stage
     make
+
+## Slack app setup
+
+See the Slack docs on how to set up a slash command.
+
+https://api.slack.com/slash-commands
