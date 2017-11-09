@@ -1,8 +1,9 @@
 SHELL = /bin/bash
+APP_ENV ?= dev
 
 deploy: build
 	aws cloudformation deploy \
-		--stack-name river-gauges-app \
+		--stack-name river-gauges-app-$(APP_ENV) \
 		--template-file tmp/sam-template-output.yaml \
 		--capabilities CAPABILITY_IAM
 
